@@ -1,9 +1,9 @@
 {
-    "name" : "nikkobautista/scribd",
-    "description" : "Composer-compatible Scribd PHP library (based on Robert Pottorff's version",
+    "name" : "thesnews/scribd",
+    "description" : "Slightly modified composer-compatible Scribd PHP library (based on Robert Pottorff's version)",
     "keywords" : ["api", "scribd"],
     "type" : "library",
-    "homepage" : "https://github.com/nikkobautista/scribd",
+    "homepage" : "https://github.com/thesnews/scribd",
     "license" : "MIT",
     "authors" : [
         {
@@ -12,6 +12,10 @@
         {
             "name" : "Nikko Bautista",
             "email" : "nikko@nikkobautista.com"
+        },
+        {
+            "name": "Mike Joseph",
+            "email": "mike@getsnworks.com"
         }
     ],
     "require" : {
@@ -24,6 +28,6 @@
         }
     },
     "support" : {
-        "email" : "nikko@nikkobautista.com"
+        "email" : "mike@getsnworks.com"
     }
 }
