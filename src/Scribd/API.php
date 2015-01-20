@@ -77,6 +77,18 @@ class API
     }
 
     /**
+    * Call arbitrary method against scribd api
+    * @param string $method : method to call
+    * @param array $params : optional parameters
+    * @return array containing doc_id, title, description, access_key, and conversion_status for all documents
+    */
+    public function call($method, $params = array())
+    {
+        $result = $this->postRequest($method, $params);
+        return $result['resultset'];
+    }
+
+    /**
     * Get the current conversion status of a document
     * @param int $doc_id : document id
     * @return string containing DISPLAYABLE", "DONE", "ERROR", or "PROCESSING" for the current document.
