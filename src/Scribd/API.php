@@ -47,7 +47,7 @@ class API
 
     /**
     * Upload a document from a Url
-    * @param string $url : absolute URL of file 
+    * @param string $url : absolute URL of file
     * @param string $doc_type : PDF, DOC, TXT, PPT, etc.
     * @param string $access : public or private. Default is Public.
     * @return array containing doc_id, access_key, and secret_password if nessesary.
@@ -85,6 +85,9 @@ class API
     public function call($method, $params = array())
     {
         $result = $this->postRequest($method, $params);
+        if( array_key_exists('result_set', $result) ) {
+            $result = $this->fixResult($result);
+        }
         return $result['resultset'];
     }
 
@@ -164,11 +167,11 @@ class API
     * @param string $scope : scope of search, "all" or "user"
     * @param integer $category_id : Restricts search results to only documents in a certain category.
     * @param string $language : Restricts search results to only documents in the specified language (in ISO 639-1 format).
-    * @param boolean $simple : This option specifies whether or not to allow advanced search queries. 
-    *                          When set to false, the API search behaves the same as the search on Scribd.com. 
-    *                          When set to true, the API search allows advanced queries that contain filters 
+    * @param boolean $simple : This option specifies whether or not to allow advanced search queries.
+    *                          When set to false, the API search behaves the same as the search on Scribd.com.
+    *                          When set to true, the API search allows advanced queries that contain filters
     *                          such as title:"A Tale of Two Cities". Set to "true" by default.
-    *                          
+    *
     * @return array of results, each of which contain doc_id, secret password, access_key, title, and description
     */
     public function search($query, $num_results = null, $num_start = null, $scope = null, $category_id = null, $language = null, $simple = true)
@@ -179,7 +182,7 @@ class API
         $params['num_start'] = $num_start;
         $params['scope'] = $scope;
         $params['simple'] = $simple;
-        
+
         if (!is_null($category_id)) {
             $params['category_id'] = $category_id;
         }
@@ -260,12 +263,12 @@ class API
         $request_url = $this->url;
 
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $request_url );       
+        curl_setopt($ch, CURLOPT_URL, $request_url );
         curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
         curl_setopt($ch, CURLOPT_POST, 1 );
         curl_setopt($ch, CURLOPT_POSTFIELDS, $post_params );
         $xml = curl_exec( $ch );
-        $result = simplexml_load_string($xml); 
+        $result = simplexml_load_string($xml);
         curl_close($ch);
 
         if($result['stat'] == 'fail') {
@@ -291,6 +294,16 @@ class API
                 return $result;
             }
         }
+    }
+
+    /**
+     * Some api results return in a slightly different format - this standardizes
+     * @param  array $result
+     * @return array
+     */
+    private function fixResult($result) {
+        $res = $result['result_set'];
+        return array('resultset' => $result['result_set']);
     }
 
     /**
