@@ -72,7 +72,7 @@ class API
     {
         $method = "docs.getList";
 
-        $result = $this->postRequest($method, $params);
+        $result = $this->getRequest($method, $params);
         return $result['resultset'];
     }
 
@@ -82,9 +82,13 @@ class API
     * @param array $params : optional parameters
     * @return array containing doc_id, title, description, access_key, and conversion_status for all documents
     */
-    public function call($method, $params = array())
+    public function call($method, $params = array(), $type = 'post')
     {
-        $result = $this->postRequest($method, $params);
+        if (!$type || $type == 'post') {
+            $result = $this->postRequest($method, $params);
+        } else {
+            $result = $this->getRequest($method, $params);
+        }
         if( array_key_exists('result_set', $result) ) {
             $result = $this->fixResult($result);
         }
@@ -101,7 +105,7 @@ class API
         $method = "docs.getConversionStatus";
         $params['doc_id'] = $doc_id;
 
-        $result = $this->postRequest($method, $params);
+        $result = $this->getRequest($method, $params);
         return $result['conversion_status'];
     }
 
@@ -114,7 +118,7 @@ class API
         $method = "docs.getSettings";
         $params['doc_id'] = $doc_id;
 
-        $result = $this->postRequest($method, $params);
+        $result = $this->getRequest($method, $params);
         return $result;
     }
 
@@ -191,7 +195,7 @@ class API
             $params['language'] = $language;
         }
 
-        $result = $this->postRequest($method, $params);
+        $result = $this->getRequest($method, $params);
 
         return $result['result_set'];
     }
@@ -231,6 +235,77 @@ class API
 
         $result = $this->postRequest($method, $params);
         return $result;
+    }
+
+    /**
+     * Sends a request
+     * @param  string $method type of request
+     * @param  array $params  array of parameters
+     * @return array          result set
+     */
+    private function getRequest($method, $params)
+    {
+        $params['method'] = $method;
+        $params['session_key'] = $this->session_key;
+        $params['my_user_id'] = $this->my_user_id;
+
+        $get_params = array();
+
+        foreach ($params as $key => &$val) {
+            if(!empty($val)) {
+                if (is_array($val)) $val = implode(',', $val);
+                if($key != 'file' && substr($val, 0, 1) == "@"){
+                    $val = chr(32).$val;
+                }
+                $get_params[$key] = $val;
+            }
+        }
+
+        $secret = $this->secret;
+        $get_params['api_sig'] = $this->generate_sig($params, $secret);
+
+        $request_parts = parse_url($this->url);
+
+        $get_params['api_key'] = $this->api_key;
+
+        $request_url = sprintf('%s://%s%s', $request_parts['scheme'], $request_parts['host'], $request_parts['path'])
+                    . '?'
+                    . http_build_query($get_params);
+
+        // $request_url = $this->url;
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $request_url );
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+        curl_setopt($ch, CURLOPT_POST, 1 );
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $post_params );
+        $xml = curl_exec( $ch );
+        $result = simplexml_load_string($xml);
+        curl_close($ch);
+
+        if($result['stat'] == 'fail') {
+            //This is ineffecient.
+            $error_array = (array)$result;
+            $error_array = (array)$error_array;
+            $error_array = (array)$error_array['error'];
+            $error_array = $error_array['@attributes'];
+            $this->error = $error_array['code'];
+
+            throw new Exception($error_array['message'], $error_array['code']);
+
+            return 0;
+        }
+
+        if($result['stat'] == "ok") {
+            //This is shifty. Works currently though.
+            $result = $this->convert_simplexml_to_array($result);
+            if(gettype($result) == 'string' && urlencode($result) == "%0A%0A" && $this->error == 0) {
+                $result = "1";
+                return $result;
+            } else {
+                return $result;
+            }
+        }
     }
 
     /**
